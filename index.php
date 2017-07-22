@@ -5,7 +5,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
-    <title>Bootstrap 101 Template</title>
+    <title>Employee Registration</title>
 
     <!-- Bootstrap -->
     <link href="css/bootstrap.min.css" rel="stylesheet">
@@ -26,63 +26,43 @@
   <body>
 
 <?php
-require_once("conn.php");
+require_once $_SERVER['DOCUMENT_ROOT'].'/bootstrap/utils/conn.php';
+
+include("utils/helper.php");
+
+$helper=new HelperSql;
+$helper->deleteEmployee($conn);
+
 
 
 $sql1="SELECT * FROM location";
 $result=$conn->query($sql1);
 
+if(isset($_GET['edit']) && !empty($_GET['edit'])){
+  $edit_id=(int)$_GET['edit'];
+  $Esql="SELECT * FROM employee WHERE id='$edit_id'";
+$edit_result=$conn->query($Esql);
+$Editemployee=mysqli_fetch_assoc($edit_result);
 
-$limit =10;  
-if (isset($_GET["page"])) { $page  = $_GET["page"]; } else { $page=1; };  
-$start_from = ($page-1) * $limit;
-$sqlEmployee = "SELECT * FROM employee LIMIT $start_from, $limit";  
-$rs_result = $conn->query($sqlEmployee);
-
-
-$sqle = "SELECT COUNT(id) FROM employee";  
-$rs_results = mysqli_query($conn,$sqle);  
-$row = mysqli_fetch_row($rs_results);  
-$total_records = $row[0];  
-$total_pages = ceil($total_records / $limit); 
-
-
-
-
-$errors=array();
-if(isset($_POST['add_submit'])){
-
-if(!$_POST['first_name']=='' && !$_POST['last_name']==''){
-$sql = "INSERT INTO employee (first_name, last_name, email,phone,address,city,state,zip) VALUES ('$_POST[first_name]', '$_POST[last_name]', '$_POST[email]','$_POST[phone]','$_POST[address]','$_POST[city]','$_POST[state]','$_POST[zip]')";
-
-if(mysqli_query($conn, $sql)) {
-  
-    echo "New record created successfully";
-
-    $_POST['first_name']='';
-    $_POST['last_name']='';
-    $_POST['email']='';
-    $_POST['phone']='';
-    $_POST['address']='';
-    $_POST['city']='';
-    $_POST['state']='';
-    $_POST['zip']='';
-
-    $divBy10=$total_pages % 10;
-    
-
-    $url='index.php'.'?page='.$total_pages;
-    header('Location: '.$url);
-  
-} else {
-    echo "Error: " . $sql . "<br>" . mysqli_error($conn);
 }
-}
+
+
+$limit =5;
+if (isset($_GET["page"]))
+ { $page  = $_GET["page"];
+  } else {
+    $page=1;
+     };
+$rs_result=$helper->searchEmployees($page,$conn,$limit);
+$total_pages=$helper->getNumberOfPage($conn,$limit);
+
+
+
+    $helper->insertEmployee($conn);
+
+
 
 mysqli_close($conn);
-}
-
-
 ?>
 <div class="container-fluid" id="main-div-container">
     
@@ -98,7 +78,7 @@ mysqli_close($conn);
                 </div>
               </div>
               <div class="panel-body">
-                <table class="table table-striped table-bordered table-auto">
+                <table class="table table-bordered table-auto table-hover">
                   <thead>
                     <tr>
                         <th><em class="fa fa-cog"></em></th>
@@ -117,8 +97,8 @@ mysqli_close($conn);
                       <?php while($employee=mysqli_fetch_assoc($rs_result)): ?>
                           <tr class="animated fadeIn">
                             <td align="center">
-                              <a class="btn btn-default" href="index.php?edit=<?=$employee['id']; ?>"><em class="fa fa-pencil"></em></a>
-                              <a class="btn btn-danger"href="index.php?edit=<?=$employee['id']; ?>"><em class="fa fa-trash"></em></a>
+                              <a class="btn btn-success" href="index.php?edit=<?=$employee['id']; ?>"><em class="fa fa-pencil"></em></a>
+                              <a class="btn btn-danger"href="index.php?delete=<?=$employee['id']; ?>"><em class="fa fa-trash"></em></a>
                             </td>
                             <td class="hidden-xs"><?=$employee['id'] ?></td>
                             <td><?=$employee['first_name'] ?></td>
@@ -145,7 +125,7 @@ echo $pagLink . "</div>";
 
               </div>
 
-    <form class="well form-horizontal" action=" " method="post"  id="contact_form">
+    <form class="well form-horizontal" action="index.php" method="post"  id="contact_form">
 <fieldset>
 
 <!-- Form Name -->
