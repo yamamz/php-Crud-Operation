@@ -28,7 +28,7 @@
 <?php
 require_once $_SERVER['DOCUMENT_ROOT'].'/bootstrap/utils/conn.php';
 
-include("utils/helper.php");
+require("utils/helper.php");
 
 $helper=new HelperSql;
 $helper->deleteEmployee($conn);
@@ -38,14 +38,51 @@ $helper->deleteEmployee($conn);
 $sql1="SELECT * FROM location";
 $result=$conn->query($sql1);
 
-if(isset($_GET['edit']) && !empty($_GET['edit'])){
-  $edit_id=(int)$_GET['edit'];
-  $Esql="SELECT * FROM employee WHERE id='$edit_id'";
-$edit_result=$conn->query($Esql);
-$Editemployee=mysqli_fetch_assoc($edit_result);
+ $EditemployeeResult=$helper->getForEdit($conn);
+      $idForEdit=null;
 
-}
 
+          $value_fname='';
+           $value_lname='';
+           $value_phone='';
+           $value_email='';
+           $value_address='';
+           $value_city='';
+           $value_state='';
+           $value_zip='';
+
+      if(isset($_GET['edit'])){
+
+          $value_fname=$EditemployeeResult['first_name'];
+           $value_lname=$EditemployeeResult['last_name'];
+           $value_phone=$EditemployeeResult['phone'];
+           $value_email=$EditemployeeResult['email'];
+           $value_address=$EditemployeeResult['address'];
+           $value_city=$EditemployeeResult['city'];
+           $value_state=$EditemployeeResult['state'];
+           $value_zip=$EditemployeeResult['zip'];
+
+
+      }
+      else{
+
+          if(isset($_POST['first_name']) && isset($_POST['last_name']) &&
+             isset($_POST['email']) && isset($_POST['phone'])
+            && isset($_POST['address']) && isset($_POST['city']) &&
+             isset($_POST['state']) && isset($_POST['zip'])
+            ){
+
+            $value_fname=$_POST['first_name'];
+           $value_lname=$_POST['last_name'];
+           $value_phone=$_POST['phone'];
+           $value_email=   $_POST['email'];
+           $value_address=$_POST['address'];
+           $value_city= $_POST['city'];
+           $value_state= $_POST['state'];
+           $value_zip= $_POST['zip'];
+
+          }
+      }
 
 $limit =5;
 if (isset($_GET["page"]))
@@ -56,9 +93,10 @@ if (isset($_GET["page"]))
 $rs_result=$helper->searchEmployees($page,$conn,$limit);
 $total_pages=$helper->getNumberOfPage($conn,$limit);
 
-
-
     $helper->insertEmployee($conn);
+      $helper->editEmployee($conn);
+
+
 
 
 
@@ -125,11 +163,11 @@ echo $pagLink . "</div>";
 
               </div>
 
-    <form class="well form-horizontal" action="index.php" method="post"  id="contact_form">
+    <form class="well form-horizontal" action="index.php<?=((isset($_GET['edit']))?'?edit='.$EditemployeeResult['id']:''); ?>" method="post"  id="contact_form">
 <fieldset>
 
 <!-- Form Name -->
-<legend class="text-center">Employee Information</legend>
+<legend class="text-center"><?=((isset($_GET['edit']))?'Edit':'Add'); ?>  Employee</legend>
 
 <!-- Text input-->
 
@@ -138,7 +176,7 @@ echo $pagLink . "</div>";
   <div class="col-md-4 inputGroupContainer">
   <div class="input-group">
   <span class="input-group-addon"><i class="glyphicon glyphicon-user"></i></span>
-  <input  name="first_name" placeholder="First Name" class="form-control"  type="text" id="first_name">
+  <input  name="first_name" placeholder="First Name" class="form-control"  type="text" value="<?=$value_fname?>" id="first_name">
     </div>
   </div>
 </div>
@@ -150,7 +188,7 @@ echo $pagLink . "</div>";
     <div class="col-md-4 inputGroupContainer">
     <div class="input-group">
   <span class="input-group-addon"><i class="glyphicon glyphicon-user"></i></span>
-  <input name="last_name" placeholder="Last Name" class="form-control"  type="text" id="last_name">
+  <input name="last_name" placeholder="Last Name" class="form-control"  type="text" value="<?=$value_lname?>" id="last_name">
     </div>
   </div>
 </div>
@@ -161,7 +199,7 @@ echo $pagLink . "</div>";
     <div class="col-md-4 inputGroupContainer">
     <div class="input-group">
         <span class="input-group-addon"><i class="glyphicon glyphicon-envelope"></i></span>
-  <input name="email" placeholder="E-Mail Address" class="form-control"  type="text">
+  <input name="email" placeholder="E-Mail Address" class="form-control" value="<?=$value_email?>" type="text">
     </div>
   </div>
 </div>
@@ -174,7 +212,7 @@ echo $pagLink . "</div>";
     <div class="col-md-4 inputGroupContainer">
     <div class="input-group">
         <span class="input-group-addon"><i class="glyphicon glyphicon-earphone"></i></span>
-  <input name="phone" placeholder="+639398329162" class="form-control" type="text">
+  <input name="phone" placeholder="+639398329162" class="form-control" value="<?=$value_phone?>" type="text">
     </div>
   </div>
 </div>
@@ -186,7 +224,7 @@ echo $pagLink . "</div>";
     <div class="col-md-4 inputGroupContainer">
     <div class="input-group">
         <span class="input-group-addon"><i class="glyphicon glyphicon-home"></i></span>
-  <input name="address" placeholder="Address" class="form-control" type="text">
+  <input name="address" placeholder="Address" class="form-control" value="<?=$value_address?>" type="text">
     </div>
   </div>
 </div>
@@ -198,7 +236,7 @@ echo $pagLink . "</div>";
     <div class="col-md-4 inputGroupContainer">
     <div class="input-group">
         <span class="input-group-addon"><i class="glyphicon glyphicon-home"></i></span>
-  <input name="city" placeholder="city" class="form-control"  type="text">
+  <input name="city" placeholder="city" class="form-control" value="<?=$value_city?>" type="text">
     </div>
   </div>
 </div>
@@ -211,9 +249,10 @@ echo $pagLink . "</div>";
     <div class="input-group">
         <span class="input-group-addon"><i class="glyphicon glyphicon-list"></i></span>
     
-    <select name="state" class="form-control selectpicker" >
-    
-      <option value=" " >Please select your state</option>
+    <select name="state" class="form-control selectpicker"  value="<?=((isset($_GET['edit']))?$value_state : '') ?>">
+   <?php if(!isset($_GET['edit'])): ?>
+      <option value=" ">Please select your state</option>
+          <?php endif; ?>
           <?php while($location=mysqli_fetch_assoc($result)): ?>
       <option><?=$location['state']; ?></option>
           <?php endwhile; ?>
@@ -230,7 +269,7 @@ echo $pagLink . "</div>";
     <div class="col-md-4 inputGroupContainer">
     <div class="input-group">
         <span class="input-group-addon"><i class="glyphicon glyphicon-home"></i></span>
-  <input name="zip" placeholder="Zip Code" class="form-control"  type="text">
+  <input name="zip" placeholder="Zip Code" class="form-control" value="<?=$value_zip?>"  type="text">
     </div>
 </div>
 </div>
@@ -241,9 +280,17 @@ echo $pagLink . "</div>";
 <div class="form-group">
   <label class="col-md-4 control-label"></label>
   <div class="col-md-4">
-    <button type="submit" class="btn btn-danger btn-large" name="add_submit" id="register" disabled>Save <span class="glyphicon glyphicon-save"></span></button>
-  </div>
+    <button type="submit" class="btn btn-danger btn-large" name="add_submit" id="register" disabled><?=((isset($_GET['edit']))?'Edit':'Add'); ?>
+        <span class="glyphicon glyphicon-save"></span></button>
+            <?php if(isset($_GET['edit'])): ?>
+
+
+<a href="index.php" class="btn btn-danger">Cancel</a>
+
+        <?php endif; ?>
 </div>
+  </div>
+
 
 </fieldset>
 </form>
